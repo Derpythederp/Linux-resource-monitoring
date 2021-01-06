@@ -10,9 +10,9 @@ Help()
     echo "This script helps you monitor your current disk and memory usage."
     echo
     echo "Syntax: usage [-l|h]"
-    echo "Options: "
-    echo "l [disk|ram]    Specify disk or RAM "
-    echo "h    Print this help page"
+    echo "Options:"
+    printf "%-30s Specify disk or RAM \n" "l [disk|ram|freq|temp|all]"
+    printf "%-30s Print this help page \n" "h"
     echo
 }
 
@@ -32,6 +32,29 @@ Disk()
     # Display Disk space usage
     echo "------------------Current Disk Usage-----------------------"
     df -h
+}
+
+Cpu_freq()
+{
+    # Display CPU frequency of all cores, ARM archictecture specific
+    arm_core_path="/sys/devices/system/cpu/" #Don't put space between equal and variable
+    # $(()) is for arithmic expansion, while $() is for command expansion 
+    echo "------------------Current CPU frequency-----------------------"
+    echo "Core count: $(ls ${arm_core_path} | grep -c "cpu[0-9]")"
+    core_names=($(ls ${arm_core_path} | grep "cpu[0-9]")) # Outer bracket is to store in array for iteration
+
+    for (( i=0; i<${#core_names[@]}; i++ ));
+    do
+        echo "CPU core ${i+1}: $(($(cat ${arm_core_path}/${core_names[$i]}/cpufreq/scaling_cur_freq)/1000))Ghz"
+    done
+}
+
+Cpu_temp()
+{
+    #Display CPU temperature, ARM archictecture specific
+    echo "------------------Current CPU Temperature-----------------------"
+    cpu_temp=$(cat /sys/class/thermal/thermal_zone0/temp)
+    echo "Current CPU Temperature: $((${cpu_temp}/1000)) 'C"
 }
 
 #########################################################################
@@ -56,9 +79,19 @@ while getopts ${optstring} arg ; do
              Disk
              exit 0
 
-          elif [[ "$interest" == "both" ]]; then
+          elif [[ "$interest" == "all" ]]; then
              Memory
              Disk
+             Cpu_freq
+             Cpu_temp
+             exit 0
+
+          elif [[ "$interest" == "freq" ]]; then
+             Cpu_freq
+             exit 0
+
+          elif [[ "$interest" == "temp" ]]; then
+             Cpu_temp
              exit 0
 
           else
@@ -85,3 +118,11 @@ while getopts ${optstring} arg ; do
           ;;
     esac
 done
+
+if [ $OPTIND -eq 1 ]; then
+    echo $'No options were passed. Please refer to help below. \n' 
+    # This one is interesting, $'' is not the same as $"", the latter resulting in \n not being read
+    # $'' follows the ANSI C implementation, which recognises newline character! 
+    Help
+    exit
+fi
