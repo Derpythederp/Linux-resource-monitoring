@@ -19,6 +19,12 @@ Help()
 #########################################################################
 #Other functions
 ########################################################################
+Check_path()
+{
+    # Check $PATH for /opt/vc/bin, and if there is not any, add to path
+    # If there is no /opt/vc/bin in the first place, echo no vcgencmd,
+    # Fall back to non vcgencmd commands by setting $VCGENC to false
+}
 
 Memory()
 {
